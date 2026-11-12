@@ -90,6 +90,12 @@ Run the test suite with:
 uv run pytest
 ```
 
+Run the live FAQ and guardrail regression checks against a running server with:
+
+```bash
+uv run python tests/test_nova.py
+```
+
 ## API Contract and Design Decisions
 
 - `GET /`: Serves the browser UI for HTML clients or service metadata for JSON
