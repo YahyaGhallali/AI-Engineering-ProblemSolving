@@ -7,8 +7,8 @@ using pydantic-settings, and configures standard Python logging.
 from functools import lru_cache
 import logging
 import sys
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 # ---------------------------------------------------------------------------
 # Logging Configuration
@@ -45,10 +45,12 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash-lite"
 
-    # Pydantic Settings configuration:
-    # Loads from .env first, falling back to .env.example if .env is missing.
+    # Provider request timeout in milliseconds.
+    gemini_timeout_ms: int = Field(default=30_000, gt=0)
+
+    # Pydantic Settings configuration.
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.example"),
+        env_file=".env.example",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -63,7 +65,9 @@ def get_settings() -> Settings:
     settings = Settings()
 
     # Log safe startup details (confirming configuration loaded without exposing secrets)
-    api_key_configured = bool(settings.gemini_api_key and settings.gemini_api_key.strip())
+    api_key_configured = bool(
+        settings.gemini_api_key and settings.gemini_api_key.strip()
+    )
     logger.info(
         "Configuration loaded successfully: app_name='%s', env='%s', model='%s', debug=%s, api_key_configured=%s",
         settings.app_name,

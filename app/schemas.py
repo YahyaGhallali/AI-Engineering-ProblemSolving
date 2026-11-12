@@ -1,14 +1,42 @@
 """Pydantic schemas and models for Nova Support AI."""
 
-from typing import List, Optional
-from pydantic import BaseModel, Field, model_validator
+from typing import List, Literal
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+MAX_MESSAGES = 20
+MAX_MESSAGE_LENGTH = 4_000
+MessageRole = Literal["user", "model"]
 
 
 class Message(BaseModel):
     """A single chat message with a role and text content."""
 
-    role: str = Field(..., description="Role of the sender ('user', 'model', or 'system')")
-    content: str = Field(..., description="Text content of the message")
+    role: MessageRole = Field(..., description="Role of the sender ('user' or 'model')")
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=MAX_MESSAGE_LENGTH,
+        description="Text content of the message",
+    )
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, value: object) -> str:
+        """Normalize and validate the sender role."""
+        if not isinstance(value, str):
+            raise ValueError("role must be a string")
+        normalized = value.strip().lower()
+        if normalized not in ("user", "model"):
+            raise ValueError("role must be user or model")
+        return normalized
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def normalize_content(cls, value: object) -> str:
+        """Reject blank content and normalize surrounding whitespace."""
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("content must be a non-empty string")
+        return value.strip()
 
 
 # Backward-compatibility alias
@@ -18,35 +46,17 @@ ChatMessage = Message
 class ChatRequest(BaseModel):
     """Request payload for the /chat endpoint.
 
-    Supports `messages: list[Message]` as the primary schema, while gracefully
-    accepting legacy `message` + `history` payloads.
+    Accepts a chronological list of user and model messages.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     messages: List[Message] = Field(
-        default_factory=list,
+        ...,
+        min_length=1,
+        max_length=MAX_MESSAGES,
         description="Chronological list of conversation messages",
     )
-    # Legacy fields for backward compatibility
-    message: Optional[str] = Field(
-        default=None,
-        description="Legacy single message string",
-    )
-    history: Optional[List[Message]] = Field(
-        default=None,
-        description="Legacy conversation history",
-    )
-
-    @model_validator(mode="after")
-    def unify_messages(self) -> "ChatRequest":
-        """Consolidate legacy message and history fields into messages list."""
-        if not self.messages:
-            unified: List[Message] = []
-            if self.history:
-                unified.extend(self.history)
-            if self.message and self.message.strip():
-                unified.append(Message(role="user", content=self.message.strip()))
-            self.messages = unified
-        return self
 
 
 class ChatResponse(BaseModel):

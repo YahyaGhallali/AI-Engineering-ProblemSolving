@@ -430,6 +430,25 @@
     // --------------------------------------------------------------------------
     // Render Message Row in Chat Area
     // --------------------------------------------------------------------------
+    function formatMessage(text) {
+      const fragment = document.createDocumentFragment();
+      const boldPattern = /\*\*([^*\n]+)\*\*/g;
+      let lastIndex = 0;
+      let match;
+
+      while ((match = boldPattern.exec(text)) !== null) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+
+        const bold = document.createElement("strong");
+        bold.textContent = match[1];
+        fragment.appendChild(bold);
+        lastIndex = boldPattern.lastIndex;
+      }
+
+      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+      return fragment;
+    }
+
     function appendMessage(role, text, isError = false) {
       const row = document.createElement("div");
       row.className = `message-row ${role === "user" ? "user" : "assistant"}${isError ? " error" : ""}`;
@@ -440,7 +459,7 @@
 
       const bubble = document.createElement("div");
       bubble.className = "message-bubble";
-      bubble.textContent = text;
+      bubble.appendChild(formatMessage(text));
 
       row.appendChild(avatar);
       row.appendChild(bubble);
