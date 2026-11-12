@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova Support AI - Delivery Assistant</title>
+  <style>
+    /* ==========================================================================
+       Reset & Base Styles
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f4f6f9;
+      color: #1f2937;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       Header Styles
+       ========================================================================== */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar-header {
+      width: 40px;
+      height: 40px;
+      background: #2563eb;
+      color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .title-group h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .title-group p {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .status-badge.error {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+
+    .status-badge.error .status-dot {
+      background: #ef4444;
+    }
+
+    /* ==========================================================================
+       Main Chat Layout
+       ========================================================================== */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      height: calc(100vh - 73px);
+      padding: 16px 20px;
+    }
+
+    /* Message list container */
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 10px;
+      max-width: 80%;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-row.assistant {
+      align-self: flex-start;
+    }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .message-row.assistant .message-avatar {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .message-row.user .message-avatar {
+      background: #4b5563;
+      color: #ffffff;
+    }
+
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 14.5px;
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message-row.assistant .message-bubble {
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .message-row.user .message-bubble {
+      background: #2563eb;
+      color: #ffffff;
+      border-top-right-radius: 4px;
+    }
+
+    .message-row.error .message-bubble {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: #9ca3af;
+      border-radius: 50%;
+      animation: pulse 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Quick suggestion chips */
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .suggestion-btn {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 12.5px;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .suggestion-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+
+    /* ==========================================================================
+       Input Area & Controls
+       ========================================================================== */
+    .input-wrapper {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    #user-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14.5px;
+      font-family: inherit;
+      resize: none;
+      max-height: 120px;
+      min-height: 24px;
+      line-height: 1.4;
+      padding: 4px 0;
+      color: #111827;
+      background: transparent;
+    }
+
+    #send-btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    #send-btn:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
+    #send-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* Activity log footer banner */
+    .activity-bar {
+      font-size: 11.5px;
+      color: #6b7280;
+      margin-top: 6px;
+      padding: 0 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="avatar-header">N</div>
+      <div class="title-group">
+        <h1>Nova Support Assistant</h1>
+        <p>Delivery & Shipping Customer Care</p>
+      </div>
+    </div>
+    <div id="status-badge" class="status-badge">
+      <span class="status-dot"></span>
+      <span id="status-text">Backend Connected</span>
+    </div>
+  </header>
+
+  <!-- Main Chat Container -->
+  <main>
+    <!-- Messages Scroll Area -->
+    <div id="chat-messages">
+      <!-- Initial greeting from Nova -->
+      <div class="message-row assistant">
+        <div class="message-avatar">N</div>
+        <div class="message-bubble">Hello! I'm Nova, your customer support assistant. How can I help you with your delivery, shipping times, parcel tracking, or refunds today?</div>
+      </div>
+    </div>
+
+    <!-- Quick question suggestions -->
+    <div class="suggestions">
+      <button class="suggestion-btn" onclick="sendQuickPrompt(this)">What are your standard shipping times?</button>
+      <button class="suggestion-btn" onclick="sendQuickPrompt(this)">How fast is express delivery?</button>
+      <button class="suggestion-btn" onclick="sendQuickPrompt(this)">What are your support operating hours?</button>
+      <button class="suggestion-btn" onclick="sendQuickPrompt(this)">My parcel arrived damaged. Can I get a refund?</button>
+      <button class="suggestion-btn" onclick="sendQuickPrompt(this)">How do I file a lost parcel claim?</button>
+    </div>
+
+    <!-- Message input form -->
+    <div class="input-wrapper">
+      <textarea
+        id="user-input"
+        placeholder="Type a question about your parcel, shipping, or refunds... (Enter to send)"
+        rows="1"
+      ></textarea>
+      <button id="send-btn" onclick="handleSend()">
+        <span>Send</span>
+      </button>
+    </div>
+
+    <!-- Activity Log Footer -->
+    <div class="activity-bar">
+      <span id="log-status">Ready</span>
+      <span>API Endpoint: <code>POST /chat</code></span>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       JavaScript Client Logic
+       ======================================================================== -->
+  <script>
+    // --------------------------------------------------------------------------
+    // State & DOM Elements
+    // --------------------------------------------------------------------------
+    const chatContainer = document.getElementById("chat-messages");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const logStatus = document.getElementById("log-status");
+    const statusBadge = document.getElementById("status-badge");
+    const statusText = document.getElementById("status-text");
+
+    // Local conversation history sent to the backend
+    const conversationHistory = [];
+
+    // --------------------------------------------------------------------------
+    // Health Check on Startup
+    // --------------------------------------------------------------------------
+    async function checkBackendHealth() {
+      try {
+        console.log("[Nova Client] Checking backend health at GET /health...");
+        const res = await fetch("/health");
+        if (res.ok) {
+          const data = await res.json();
+          console.log("[Nova Client] Backend health check OK:", data);
+          statusBadge.classList.remove("error");
+          statusText.textContent = `Online (${data.environment})`;
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (err) {
+        console.error("[Nova Client] Backend unreachable at /health:", err.message);
+        statusBadge.classList.add("error");
+        statusText.textContent = "Backend Unreachable";
+        logStatus.textContent = "Warning: Backend unreachable. Make sure uvicorn is running.";
+      }
+    }
+    checkBackendHealth();
+
+    // --------------------------------------------------------------------------
+    // Auto-resizing Textarea & Keyboard Handling
+    // --------------------------------------------------------------------------
+    userInput.addEventListener("input", function() {
+      this.style.height = "auto";
+      this.style.height = Math.min(this.scrollHeight, 120) + "px";
+    });
+
+    userInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    // --------------------------------------------------------------------------
+    // Quick Prompt Helper
+    // --------------------------------------------------------------------------
+    function sendQuickPrompt(button) {
+      userInput.value = button.textContent.trim();
+      handleSend();
+    }
+
+    // --------------------------------------------------------------------------
+    // Render Message Row in Chat Area
+    // --------------------------------------------------------------------------
+    function appendMessage(role, text, isError = false) {
+      const row = document.createElement("div");
+      row.className = `message-row ${role === "user" ? "user" : "assistant"}${isError ? " error" : ""}`;
+
+      const avatar = document.createElement("div");
+      avatar.className = "message-avatar";
+      avatar.textContent = role === "user" ? "You" : "N";
+
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+      bubble.textContent = text;
+
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      chatContainer.appendChild(row);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      return row;
+    }
+
+    // --------------------------------------------------------------------------
+    // Loading / Typing Indicator
+    // --------------------------------------------------------------------------
+    let activeTypingRow = null;
+
+    function showTypingIndicator() {
+      const row = document.createElement("div");
+      row.className = "message-row assistant";
+      row.id = "typing-indicator-row";
+
+      const avatar = document.createElement("div");
+      avatar.className = "message-avatar";
+      avatar.textContent = "N";
+
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble typing-indicator";
+      bubble.innerHTML = `
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      `;
+
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      chatContainer.appendChild(row);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      activeTypingRow = row;
+    }
+
+    function removeTypingIndicator() {
+      if (activeTypingRow) {
+        activeTypingRow.remove();
+        activeTypingRow = null;
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // Send Message Handler
+    // --------------------------------------------------------------------------
+    async function handleSend() {
+      const text = userInput.value.trim();
+      if (!text || sendBtn.disabled) return;
+
+      // Reset input box
+      userInput.value = "";
+      userInput.style.height = "auto";
+      sendBtn.disabled = true;
+
+      // Append user message to UI and history
+      appendMessage("user", text);
+      conversationHistory.push({ role: "user", content: text });
+
+      // Build payload for POST /chat
+      const payload = { messages: conversationHistory };
+
+      // Log outbound request
+      const startTime = performance.now();
+      console.log("[Nova Client] Sending message to POST /chat:", payload);
+      logStatus.textContent = `Sending message to /chat...`;
+      showTypingIndicator();
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const latencyMs = Math.round(performance.now() - startTime);
+
+        if (!response.ok) {
+          const errorJson = await response.json().catch(() => ({}));
+          const errorMsg = errorJson.detail || `Server returned HTTP ${response.status}`;
+          console.error(`[Nova Client] Request failed (${latencyMs}ms):`, errorMsg);
+          logStatus.textContent = `Error (${latencyMs}ms): ${errorMsg}`;
+          removeTypingIndicator();
+          appendMessage("assistant", `Sorry, I encountered an issue: ${errorMsg}`, true);
+          return;
+        }
+
+        const data = await response.json();
+        console.log(`[Nova Client] Response received in ${latencyMs}ms:`, data);
+        logStatus.textContent = `Response received in ${latencyMs}ms`;
+
+        removeTypingIndicator();
+
+        const reply = data.reply || "(No reply received)";
+        appendMessage("assistant", reply);
+        conversationHistory.push({ role: "model", content: reply });
+
+      } catch (networkError) {
+        const latencyMs = Math.round(performance.now() - startTime);
+        console.error(`[Nova Client] Network error after ${latencyMs}ms:`, networkError);
+        logStatus.textContent = `Connection failed (${latencyMs}ms): Backend unreachable`;
+        statusBadge.classList.add("error");
+        statusText.textContent = "Backend Disconnected";
+
+        removeTypingIndicator();
+        appendMessage(
+          "assistant",
+          "Unable to connect to Nova support server. Please verify the FastAPI backend is running locally.",
+          true
+        );
+      } finally {
+        sendBtn.disabled = false;
+        userInput.focus();
+      }
+    }
+  </script>
+</body>
+</html>
+
